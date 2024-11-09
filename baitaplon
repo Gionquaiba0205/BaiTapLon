@@ -1,0 +1,204 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <iomanip>
+#include <ctime>
+#include <algorithm>
+
+using namespace std;
+
+struct KhachHang {
+    string ten;
+    string sdt;
+};
+
+struct DichVu {
+    string ten;
+    double gia;
+};
+
+struct May {
+    KhachHang khachHang;
+    vector<DichVu> dichVu;
+    int id;
+    string loai;
+    bool dangSuDung;
+    time_t thoiGianBatDau; // Thoi gian bat dau thue
+};
+
+class PhongGame {
+private:
+    vector<May> danhSachMay;
+    double giaTienVIP = 10000, giaTienCaoCap = 7500, giaTienThuong = 5500;
+
+public:
+    PhongGame() {
+        // Khoi tao danh sach may voi cac loai và trang thai mac dinh
+        for (int i = 1; i <= 80; ++i) {
+            May may;
+            may.id = i;
+            may.loai = (i <= 10) ? "VIP" : (i <= 40) ? "Cao cap" : "Thuong";
+            may.dangSuDung = false;
+            may.thoiGianBatDau = 0;
+            danhSachMay.push_back(may);
+        }
+    }
+
+    // Tim may trong
+    int timMayTrong(string loaiMay = "") {
+        for (int i = 0; i < danhSachMay.size(); ++i) {
+            if (!danhSachMay[i].dangSuDung && (loaiMay == "" || danhSachMay[i].loai == loaiMay)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Chon may
+    void chonMay(string loaiMay) {
+        int viTriMay = timMayTrong(loaiMay);
+        if (viTriMay != -1) {
+            danhSachMay[viTriMay].dangSuDung = true;
+            danhSachMay[viTriMay].thoiGianBatDau = time(0);
+
+            cout << "Nhap ten khach hang: ";
+            cin.ignore();
+            getline(cin, danhSachMay[viTriMay].khachHang.ten);
+            cout << "Nhap so dien thoai khach hang: ";
+            getline(cin, danhSachMay[viTriMay].khachHang.sdt);
+            cout << "May " << danhSachMay[viTriMay].id << " da duoc chon." << endl;
+        } else {
+            cout << "Khong tim thay may trong!" << endl;
+        }
+    }
+
+    // Tra may
+    void traMay(int idMay) {
+        int index = idMay - 1;
+        if (index >= 0 && index < danhSachMay.size() && danhSachMay[index].dangSuDung) {
+            danhSachMay[index].dangSuDung = false;
+            danhSachMay[index].khachHang = KhachHang(); // Xoa thong tin khach hang
+            danhSachMay[index].dichVu.clear(); // Xoa dich vu da su dung
+            cout << "Ban da tra may " << idMay << endl;
+        } else {
+            cout << "Khong the tra may. Vui long kiem tra lai!" << endl;
+        }
+    }
+
+    // Tinh tien
+    double tinhTien(int idMay) {
+        int index = idMay - 1;
+        May &may = danhSachMay[index];
+        double thoiGianSuDung = difftime(time(0), may.thoiGianBatDau) / 3600.0; // Tinh thoi gian su dung tinh theo gio
+        if (may.loai == "VIP") return thoiGianSuDung * giaTienVIP;
+        else if (may.loai == "Cao cap") return thoiGianSuDung * giaTienCaoCap;
+        return thoiGianSuDung * giaTienThuong;
+    }
+
+    // In hoa don
+    void inHoaDon(int idMay) {
+        int index = idMay - 1;
+        May &may = danhSachMay[index];
+        double tongTien = tinhTien(idMay);
+        time_t thoiGianKetThuc = time(0);
+
+        cout << "\n---------- HOA ÐON ----------\n";
+        cout << "Ma may: " << may.id << "\nLoai may: " << may.loai << "\n";
+        cout << "Khach hang: " << may.khachHang.ten << "\n";
+        cout << "Thoi gian bat dau: " << ctime(&may.thoiGianBatDau);
+        cout << "Thoi gian ket thuc: " << ctime(&thoiGianKetThuc);
+        cout << "Tong tien: " << fixed << setprecision(2) << tongTien << " VND" << endl;
+        cout << "----------------------------\n";
+    }
+
+    // Luu du lieu vao file
+    void luuDuLieu() {
+        ofstream outfile("phong_game.txt");
+        for (int i = 0; i < danhSachMay.size(); i++) {
+            outfile << danhSachMay[i].id << " " << danhSachMay[i].loai << " " << danhSachMay[i].dangSuDung << " " << danhSachMay[i].thoiGianBatDau << "\n";
+        }
+        outfile.close();
+    }
+
+    // Doc du lieu tu file
+    void docDuLieu() {
+        ifstream infile("phong_game.txt");
+        if (!infile) {
+            cout << "Khong the mo file phong_game.txt" << endl;
+            return;
+        }
+        May may;
+        while (infile >> may.id >> may.loai >> may.dangSuDung >> may.thoiGianBatDau) {
+            danhSachMay[may.id - 1] = may;
+        }
+        infile.close();
+    }
+
+    // Xem danh sách máy
+    void xemDanhSachMay() {
+        cout << "\nDanh sach may:\n";
+        cout << "----------------------------------------\n";
+        cout << "|  STT  |    Loai may    |  Trang thai  |\n";
+        cout << "----------------------------------------\n";
+
+        for (int i = 0; i < danhSachMay.size(); ++i) {
+            cout << "|  " << setw(3) << i + 1 << "  |";
+            cout << setw(15) << danhSachMay[i].loai << " |";
+            cout << setw(10) << (danhSachMay[i].dangSuDung ? "O" : "X") << " |\n";
+        }
+        cout << "----------------------------------------\n";
+    }
+};
+
+int main() {
+    PhongGame phongGame;
+    phongGame.docDuLieu();
+
+    int luaChon;
+    do {
+        cout << "\n--- QUAN LY PHONG GAME ---\n";
+        cout << "1. Xem danh sach may\n";
+        cout << "2. Chon may\n";
+        cout << "3. Tra may\n";
+        cout << "4. Tinh tien\n";
+        cout << "5. Thoat\n";
+        cout << "Nhap lua chon: ";
+        cin >> luaChon;
+
+        switch (luaChon) {
+            case 1:
+                phongGame.xemDanhSachMay();
+                break;
+            case 2: {
+                cout << "Nhap loai may (VIP/Cao cap/Thuong): ";
+                string loaiMay;
+                cin >> loaiMay;
+                phongGame.chonMay(loaiMay);
+                break;
+            }
+            case 3: {
+                cout << "Nhap ma may can tra: ";
+                int idMay;
+                cin >> idMay;
+                phongGame.traMay(idMay);
+                break;
+            }
+            case 4: {
+                cout << "Nhap ma may de tinh tien: ";
+                int idMay;
+                cin >> idMay;
+                phongGame.inHoaDon(idMay);
+                break;
+            }
+            case 5:
+                phongGame.luuDuLieu();
+                cout << "Thoat chuong trinh.\n";
+                break;
+            default:
+                cout << "Lua chon khong hop le. Vui long thu lai.\n";
+        }
+    } while (luaChon != 5);
+
+    return 0;
+}
